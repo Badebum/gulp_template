@@ -1,48 +1,55 @@
-const {src, dest, series, watch} = require('gulp')
-const sass = require('gulp-sass')
-const csso = require('gulp-csso')
-const include = require('gulp-file-include')
-const htmlmin = require('gulp-htmlmin')
-const del = require('del')
-const concat = require('gulp-concat')
-const autoprefixer = require('gulp-autoprefixer')
-const sync = require('browser-sync').create()
+'use strict';
 
-function html() {
-  return src('src/**.html')
-    .pipe(include({
-      prefix: '@@'
-    }))
-    .pipe(htmlmin({
-      collapseWhitespace: true
-    }))
-    .pipe(dest('dist'))
-}
+const gulp = require('gulp');
+const stylus = require('gulp-stylus');
+const pug = require('gulp-pug');
+const autoprefixer = require('gulp-autoprefixer');
+const browsersync = require('browser-sync').create();
 
-function scss() {
-  return src('src/scss/**.scss')
-    .pipe(sass())
+gulp.task('stylus', function(){
+  return gulp.src('app/styl/**/main.styl')
+    .pipe(stylus())
     .pipe(autoprefixer({
-      browsers: ['last 2 versions']
+      cascade: false
     }))
-    .pipe(csso())
-    .pipe(concat('index.css'))
-    .pipe(dest('dist'))
-}
+    .pipe(gulp.dest('dist/css'));
+});
 
-function clear() {
-  return del('dist')
-}
+gulp.task('pug', function(){
+  return gulp.src('app/pug/*.pug')
+    .pipe(pug({
+      pretty: true
+    }))
+    .pipe(gulp.dest('dist'));
+});
 
-function serve() {
-  sync.init({
-    server: './dist'
-  })
+gulp.task('build', gulp.series(gulp.parallel('pug','stylus')));
 
-  watch('src/**.html', series(html)).on('change', sync.reload)
-  watch('src/scss/**.scss', series(scss)).on('change', sync.reload)
-}
+gulp.task('watch', function(){
+  gulp.watch('app/styl/**/*.*', gulp.series('stylus'));
+  gulp.watch('app/pug/**/*.*', gulp.series('pug'));
+});
 
-exports.build = series(clear, scss, html)
-exports.serve = series(clear, scss, html, serve)
-exports.clear = clear
+gulp.task('serve', function(){
+  browsersync.init({
+    server: 'dist'
+  });
+
+  browsersync.watch('dist/**/*.*').on('change', browsersync.reload);
+});
+
+
+gulp.task('tree', function(){
+  return gulp.src('*.*',{read: false})
+    .pipe(gulp.dest('./app'))
+    .pipe(gulp.dest('./app/styl'))
+    .pipe(gulp.dest('./app/pug'))
+    .pipe(gulp.dest('./dist'))
+    .pipe(gulp.dest('./dist/css'))
+    .pipe(gulp.dest('./dist/js'))
+    .pipe(gulp.dest('./dist/fonts'))
+    .pipe(gulp.dest('./dist/img'))
+    .pipe(gulp.dest('./src'))
+})
+
+gulp.task('dev', gulp.series('tree', 'build', gulp.parallel('watch', 'serve')));
