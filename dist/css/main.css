@@ -11,3 +11,8 @@ body {
   flex-direction: column;
   padding: 30px;
 }
+.link {
+  cursor: pointer;
+  color: #f00;
+  font-size: 55px;
+}
